@@ -25,6 +25,19 @@ namespace SilverlightEffects
         private static readonly DependencyProperty FaderProperty =
             DependencyProperty.RegisterAttached("Fader", typeof(Fader), typeof(FadeTrimming), new PropertyMetadata(null));
 
+        public static readonly DependencyProperty ToolTipStyleProperty =
+            DependencyProperty.RegisterAttached("ToolTipStyle", typeof(Style), typeof(FadeTrimming), new PropertyMetadata(null));
+
+        public static Style GetToolTipStyle(DependencyObject obj)
+        {
+            return (Style)obj.GetValue(ToolTipStyleProperty);
+        }
+
+        public static void SetToolTipStyle(DependencyObject obj, Style value)
+        {
+            obj.SetValue(ToolTipStyleProperty, value);
+        }
+
         public static bool GetIsEnabled(DependencyObject obj)
         {
             return (bool)obj.GetValue(IsEnabledProperty);
@@ -124,7 +137,7 @@ namespace SilverlightEffects
 
             public void Attach()
             {
-                var parent = VisualTreeHelper.GetParent(_textBlock) as FrameworkElement;  
+                var parent = VisualTreeHelper.GetParent(_textBlock) as FrameworkElement;
                 if (parent == null || _isAttached)
                 {
                     return;
@@ -135,6 +148,8 @@ namespace SilverlightEffects
 
                 _foregroundColor = DetermineForegroundColor(_textBlock);
                 UpdateForegroundBrush(_textBlock, EventArgs.Empty);
+
+                _textBlock.TextTrimming = TextTrimming.None;
 
                 _isAttached = true;
             }
@@ -161,13 +176,13 @@ namespace SilverlightEffects
                 {
                     return GetForegroundColor(textBlock);
                 }
-                
+
                 // otherwise, if the textBlock has inherited a foreground color, use that
                 if (textBlock.Foreground is SolidColorBrush)
                 {
                     return (textBlock.Foreground as SolidColorBrush).Color;
                 }
-                
+
                 return Colors.Black;
             }
 
@@ -177,8 +192,8 @@ namespace SilverlightEffects
                 var layoutClip = LayoutInformation.GetLayoutClip(_textBlock);
 
                 bool needsClipping = layoutClip != null
-                    && ((_textBlock.TextWrapping == TextWrapping.NoWrap && layoutClip.Bounds.Width > 0 
-                    && layoutClip.Bounds.Width < _textBlock.ActualWidth) 
+                    && ((_textBlock.TextWrapping == TextWrapping.NoWrap && layoutClip.Bounds.Width > 0
+                    && layoutClip.Bounds.Width < _textBlock.ActualWidth)
                     || (_textBlock.TextWrapping == TextWrapping.Wrap && layoutClip.Bounds.Height > 0
                     && layoutClip.Bounds.Height < _textBlock.ActualHeight));
 
@@ -198,13 +213,30 @@ namespace SilverlightEffects
 
                 // if the TextBlock has just become clipped, make its
                 // content show in its tooltip
-                if (!_isClipped && needsClipping)
+                if (needsClipping && GetShowTextInToolTipWhenTrimmed(_textBlock))
                 {
-                    if (GetShowTextInToolTipWhenTrimmed(_textBlock))
+                    var toolTip = ToolTipService.GetToolTip(_textBlock) as ToolTip;
+
+                    if (toolTip == null)
                     {
-                        BindingOperations.SetBinding(_textBlock, ToolTipService.ToolTipProperty,
-                                                     new Binding("Text") { Source = _textBlock });
+                        toolTip = new ToolTip();
+                        ToolTipService.SetToolTip(_textBlock, toolTip);
+
+                        toolTip.SetBinding(FrameworkElement.StyleProperty,
+                                           new Binding()
+                                           {
+                                               Path = new PropertyPath(ToolTipStyleProperty),
+                                               Source = _textBlock
+                                           });
                     }
+
+                    toolTip.SetBinding(ContentControl.ContentProperty,
+                                        new Binding()
+                                        {
+                                            Path = new PropertyPath(TextBlock.TextProperty),
+                                            Source = _textBlock
+                                        });
+
                 }
 
                 // here's the real magic: if the TextBlock is clipped
@@ -240,14 +272,14 @@ namespace SilverlightEffects
             private LinearGradientBrush GetHorizontalClipBrush(double visibleWidth)
             {
                 return new LinearGradientBrush
-                           {
-                               // set MappingMode to absolute so that
-                               // we can specify the EndPoint of the brush in
-                               // terms of the TextBlock's actual dimensions
-                               MappingMode = BrushMappingMode.Absolute,
-                               StartPoint = new Point(0, 0),
-                               EndPoint = new Point(visibleWidth, 0),
-                               GradientStops =
+                {
+                    // set MappingMode to absolute so that
+                    // we can specify the EndPoint of the brush in
+                    // terms of the TextBlock's actual dimensions
+                    MappingMode = BrushMappingMode.Absolute,
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(visibleWidth, 0),
+                    GradientStops =
                                    {
                                        new GradientStop()
                                            {Color = _foregroundColor, Offset = 0},
@@ -265,7 +297,7 @@ namespace SilverlightEffects
                                                Offset = 1
                                            }
                                    }
-                           };
+                };
             }
 
             private LinearGradientBrush GetVerticalClipBrush(double visibleHeight)
