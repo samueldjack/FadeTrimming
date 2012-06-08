@@ -10,6 +10,7 @@
     <Grid x:Name="LayoutRoot" Background="White">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <sdk:DataGrid x:Name="DataGrid" AutoGenerateColumns="False" GridLinesVisibility="None" TextOptions.TextHintingMode="Animated" Foreground="Black">
@@ -44,7 +45,8 @@
                 </sdk:DataGridTemplateColumn>
             </sdk:DataGrid.Columns>
         </sdk:DataGrid>
-        <Grid Grid.Row="1">
+        <Button Content="Change" Grid.Row="1" Click="ButtonBase_OnClick"/>
+        <Grid Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="100"/>
                 <RowDefinition Height="Auto"/>

@@ -16,6 +16,8 @@ namespace FadeTrimmingDemo.Silverlight
 {
     public partial class MainPage : UserControl
     {
+        private List<Row> _itemsSource;
+
         public class Row : INotifyPropertyChanged
         {
             private string _text;
@@ -52,8 +54,8 @@ namespace FadeTrimmingDemo.Silverlight
         {
             InitializeComponent();
 
-            List<Row> rows = Enumerable.Range(1, 100).Select(i => new Row()).ToList();
-            DataGrid.ItemsSource = rows;
+            _itemsSource = Enumerable.Range(1, 100).Select(i => new Row()).ToList();
+            DataGrid.ItemsSource = _itemsSource;
 
             var random = new Random();
             var timer = new DispatcherTimer()
@@ -63,12 +65,17 @@ namespace FadeTrimmingDemo.Silverlight
 
             timer.Tick += delegate
             {
-                var index = random.Next(0, rows.Count);
-                rows[index].Text = rows[index].Text.Length > 5
+                var index = random.Next(0, _itemsSource.Count);
+                _itemsSource[index].Text = _itemsSource[index].Text.Length > 5
                                        ? "Short"
                                        : "This is a different long text string";
             };
             timer.Start();
+        }
+
+        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        {
+            _itemsSource[0].Text = "ipsua Lorem dolor sit amet";
         }
     }
 }
